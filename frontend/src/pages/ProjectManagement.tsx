@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,6 +43,7 @@ import {
   ShowChart as ShowChartIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,12 +65,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+const LOCAL_STORAGE_KEY = 'cumuloN-projects';
+
 const ProjectManagement = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-
-  const projects = [
+  const defaultProjects = [
     {
       id: 1,
       name: 'Digital Transformation Initiative',
@@ -101,6 +103,53 @@ const ProjectManagement = () => {
       team: 15,
     },
   ];
+
+  const [projects, setProjects] = useState(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : defaultProjects;
+  });
+  const [newProject, setNewProject] = useState({
+    name: '',
+    methodology: '',
+    team: '',
+    startDate: '',
+    endDate: '',
+    description: '',
+  });
+
+  // Save projects to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projects));
+  }, [projects]);
+
+  // Handle new project field changes for TextField
+  const handleInputChange = (field: keyof typeof newProject) => (e: ChangeEvent<HTMLInputElement>) => {
+    setNewProject({ ...newProject, [field]: e.target.value });
+  };
+
+  // Handle new project field changes for Select
+  const handleSelectChange = (field: keyof typeof newProject) => (e: SelectChangeEvent<string>) => {
+    setNewProject({ ...newProject, [field]: e.target.value });
+  };
+
+  // Handle project creation
+  const handleCreateProject = () => {
+    const id = Date.now();
+    const project = {
+      id,
+      name: newProject.name,
+      status: 'Planning',
+      progress: 0,
+      methodology: newProject.methodology,
+      startDate: newProject.startDate,
+      endDate: newProject.endDate,
+      team: Number(newProject.team),
+      description: newProject.description,
+    };
+    setProjects([project, ...projects]);
+    setOpenDialog(false);
+    setNewProject({ name: '', methodology: '', team: '', startDate: '', endDate: '', description: '' });
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -138,14 +187,19 @@ const ProjectManagement = () => {
         </Button>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+      {/* Add button row, right-aligned, below the header */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="button" sx={{ fontWeight: 500, fontSize: 16, color: 'primary.main', cursor: 'pointer' }} onClick={() => setOpenDialog(true)}>
+            Add
+          </Typography>
           <Fab
             color="primary"
             aria-label="add project"
+            size="small"
             onClick={() => setOpenDialog(true)}
           >
-            <AddIcon />
+            <AddIcon fontSize="small" />
           </Fab>
         </Box>
       </Box>
@@ -349,17 +403,20 @@ const ProjectManagement = () => {
                 label="Project Name"
                 fullWidth
                 required
+                value={newProject.name}
+                onChange={handleInputChange('name')}
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
                 <InputLabel>Methodology</InputLabel>
-                <Select label="Methodology">
+                <Select label="Methodology" value={newProject.methodology} onChange={handleSelectChange('methodology')}>
                   <MenuItem value="agile">Agile</MenuItem>
                   <MenuItem value="waterfall">Waterfall</MenuItem>
                   <MenuItem value="hybrid">Hybrid</MenuItem>
                   <MenuItem value="scrum">Scrum</MenuItem>
                   <MenuItem value="kanban">Kanban</MenuItem>
+                  <MenuItem value="prince2">PRINCE II</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -368,6 +425,8 @@ const ProjectManagement = () => {
                 label="Team Size"
                 type="number"
                 fullWidth
+                value={newProject.team}
+                onChange={handleInputChange('team')}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -376,6 +435,8 @@ const ProjectManagement = () => {
                 type="date"
                 fullWidth
                 InputLabelProps={{ shrink: true }}
+                value={newProject.startDate}
+                onChange={handleInputChange('startDate')}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -384,6 +445,8 @@ const ProjectManagement = () => {
                 type="date"
                 fullWidth
                 InputLabelProps={{ shrink: true }}
+                value={newProject.endDate}
+                onChange={handleInputChange('endDate')}
               />
             </Grid>
             <Grid item xs={12}>
@@ -392,14 +455,16 @@ const ProjectManagement = () => {
                 multiline
                 rows={4}
                 fullWidth
+                value={newProject.description}
+                onChange={handleInputChange('description')}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => setOpenDialog(false)}>
-            Create Project
+          <Button onClick={handleCreateProject} variant="contained" disabled={!newProject.name || !newProject.methodology || !newProject.team || !newProject.startDate || !newProject.endDate}>
+            Create
           </Button>
         </DialogActions>
       </Dialog>
