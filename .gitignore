@@ -1,0 +1,30 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.swp 
